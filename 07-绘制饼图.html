@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas width="600" height="400"></canvas>
+<script>
+    /*1. 创建构造函数*/
+    var PieChart = function (ctx) {
+        this.ctx = ctx || document.querySelector('canvas').getContext('2d');
+        this.canvasWidth = this.ctx.canvas.width;
+        this.canvasHeight = this.ctx.canvas.height;
+        /*圆心*/
+        this.x0 = this.canvasWidth / 2 + 60;
+        this.y0 = this.canvasHeight / 2;
+        /*圆半径*/
+        this.radius = 150;
+        /*伸出去的线*/
+        this.outLine = 20;
+        /*标题字体大小*/
+        this.titFontSize = '14px 微软雅黑';
+        /*说明字体大小*/
+        this.descFontSize = '12px 微软雅黑';
+        /*说明的矩形大小*/
+        this.descRectW = 30;
+        this.descRectH = 16;
+        /*说明的间距*/
+        this.space = 20;
+        this.descSpace = 10;
+    }
+    /*2. 原型方法*/
+    PieChart.prototype.init = function (data) {
+        this.drawPie(data);
+    }
+    PieChart.prototype.drawPie = function (data) {
+        var _self = this;
+        /*1.求和*/
+        var total = 0;
+        data.forEach(function (item, i) {
+            total += item.num;
+        });
+        /*2.计算比例 求出弧度 绘制扇形*/
+        var startAngle = 0;
+        data.forEach(function (item, i) {
+            var ratio = item.num / total;
+            var angle = ratio * Math.PI * 2;
+            /*2.1 开启新路径*/
+            _self.ctx.beginPath();
+            /*2.2 移到中心圆中心点*/
+            _self.ctx.moveTo(_self.x0, _self.y0);
+            /*2.3 开始画扇形  起始的弧度是上一次的结束弧度  结束弧度其实弧度加上对应的弧度*/
+            _self.ctx.arc(_self.x0, _self.y0, _self.radius, startAngle, startAngle + angle);
+            /*2.4 赋予随机颜色*/
+            var color = _self.ctx.fillStyle = _self.getRandomColor();
+            /*2.5 填充颜色*/
+            _self.ctx.fill();
+
+            /*绘制标题*/
+            var titAngle = angle / 2 + startAngle;
+            _self.drawTit(titAngle, color, item.title);
+            /*绘制说明*/
+            _self.drawDesc(i, item.title);
+
+
+            /*重要：准备下一次的起始弧度*/
+            startAngle = startAngle + angle;
+        })
+    }
+    PieChart.prototype.drawTit = function (angle, color, title) {
+        /*1.获取计算伸出去的点坐标*/
+        /*斜边长度*/
+        var edge = this.radius + this.outLine;
+        /*X直角长度*/
+        var outX = Math.cos(angle) * edge;
+        /*Y直角长度*/
+        var outY = Math.sin(angle) * edge;
+        /*坐标*/
+        var outLineX = this.x0 + outX;
+        var outLineY = this.y0 + outY;
+
+        /*2.绘制伸出去线条*/
+        this.ctx.moveTo(this.x0, this.y0);
+        this.ctx.lineTo(outLineX, outLineY);
+
+        /*3.横向线条*/
+        this.ctx.font = this.titFontSize;
+        var textWidth = this.ctx.measureText(title).width;
+        if (outLineX > this.x0) {
+            /*右边绘制*/
+            this.ctx.lineTo(outLineX + textWidth, outLineY);
+            this.ctx.textAlign = 'left';
+        } else {
+            /*左边绘制*/
+            this.ctx.lineTo(outLineX - textWidth, outLineY);
+            this.ctx.textAlign = 'right';
+        }
+        /*3 绘制文字*/
+        this.ctx.textBaseline = 'bottom';
+        this.ctx.fillText(title, outLineX, outLineY);
+
+        this.ctx.strokeStyle = color;
+        this.ctx.stroke();
+    }
+    PieChart.prototype.drawDesc = function (index, title) {
+        /*1.根据索引绘制矩形*/
+        /*绘制矩形的坐标*/
+        var x = this.space;
+        var y = this.space + index * ( this.descRectH + this.descSpace);
+        this.ctx.fillRect(x, y, this.descRectW, this.descRectH);
+        /*2.绘制文字说明*/
+        /*2.1 文字左对齐*/
+        this.ctx.textAlign = 'left';
+        /*2.2 文字顶部对齐*/
+        this.ctx.textBaseline = 'top';
+        this.ctx.font = this.descFontSize;
+        this.ctx.fillText(title, x + this.descRectW + this.descSpace, y);
+    }
+    PieChart.prototype.getRandomColor = function () {
+        var r = Math.floor(Math.random() * 256);
+        var g = Math.floor(Math.random() * 256);
+        var b = Math.floor(Math.random() * 256);
+        return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    /*准备数据  后台返回  模拟*/
+    var data = [
+        {title: '15-20岁', num: 10},
+        {title: '21-25岁', num: 30},
+        {title: '26-30岁', num: 10},
+        {title: '31-35岁', num: 5},
+        {title: '35岁以上', num: 15}
+    ]
+    var pieChart = new PieChart();
+    pieChart.init(data);
+</script>
+</body>
+</html>
